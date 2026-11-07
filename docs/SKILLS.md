@@ -12,7 +12,7 @@ Claude Code only discovers a skill at `.claude/skills/<name>/SKILL.md`. For that
 
 Skills are loaded when Claude's auto-trigger map (in `.claude/CLAUDE.md`) matches your request to a skill. For example, when you say "write the introduction," Claude loads the paper-writing-section skill, the humanizer skill, the prose-writing skill, and the writing quality check skill. All run in sequence as part of the writing workflow.
 
-Some skills include Python scripts. These require Python 3.10+ (one script, `academic-paper-strategist/scripts/gap_analysis.py`, needs 3.12+) and the dependencies listed in each skill's directory. Most skills are pure-prompt skills that work without any external dependencies.
+Some skills include Python scripts. These require Python 3.10+ and the dependencies listed in each skill's directory. Most skills are pure-prompt skills that work without any external dependencies.
 
 ---
 

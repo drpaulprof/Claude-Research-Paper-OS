@@ -217,7 +217,7 @@ The humanizer runs multiple passes. After writing, after review, and before fina
 
 - **Claude Code** -- [Install Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview)
 - **Docker** (optional) -- For LaTeX compilation. If you do not use Docker, change the compile command in `.claude/CLAUDE.md` to your local `pdflatex` path.
-- **Python 3.10+** (optional) -- Some skills include Python scripts. They use Python 3.10 syntax, so Python 3.9 or older will not run them. One script (`academic-paper-strategist/scripts/gap_analysis.py`) needs Python 3.12+. The scripts the 6 agents use (citation validation, LaTeX checks, Semantic Scholar, CrossRef and arXiv search) need only the standard library.
+- **Python 3.10+** (optional) -- Some skills include Python scripts. They use Python 3.10 syntax, so Python 3.9 or older will not run them. The scripts the 6 agents use (citation validation, LaTeX checks, Semantic Scholar, CrossRef and arXiv search) need only the standard library.
 - **Paid API keys** (optional) -- 8 skills from claude-scientific-writer need `OPENROUTER_API_KEY` or `PARALLEL_API_KEY`. Everything else works without them.
 - **Start Claude from the project's top folder.** Script paths are relative to it (`.claude/skills/...`).
 

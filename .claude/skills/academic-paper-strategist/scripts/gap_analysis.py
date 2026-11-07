@@ -331,7 +331,7 @@ def main():
             validation = validate_gap(gap)
 
             print(f"\nValidation Results for: {gap.get('title', 'Untitled')}")
-            print(f"Status: {"✓ VALID" if validation['valid'] else "⚠ INVALID"}")
+            print(f"Status: {'✓ VALID' if validation['valid'] else '⚠ INVALID'}")
             print(f"Evidence count: {validation['evidence_count']}")
             print(f"Definition length: {validation['definition_length']} words")
             print(f"'Why matters' length: {validation['why_matters_length']} words")

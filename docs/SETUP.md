@@ -14,7 +14,7 @@ This guide walks through installation, configuration, and first use of Claude Re
 
 - **Docker** -- For LaTeX compilation inside a container. Install from [docker.com](https://www.docker.com/). If you do not have Docker, you can use a local LaTeX installation instead.
 
-- **Python 3.10+** -- Some skills include Python scripts for citation validation, literature search, and formatting checks. The scripts use Python 3.10 syntax (for example `str | None` type hints and `match` statements), so Python 3.9 or older will not run them. One script, `academic-paper-strategist/scripts/gap_analysis.py`, needs Python 3.12+. Install from [python.org](https://www.python.org/). Check your version with `python3 --version`.
+- **Python 3.10+** -- Some skills include Python scripts for citation validation, literature search, and formatting checks. The scripts use Python 3.10 syntax (for example `str | None` type hints and `match` statements), so Python 3.9 or older will not run them. Install from [python.org](https://www.python.org/). Check your version with `python3 --version`.
 
 - **LaTeX distribution** -- If not using Docker. TeX Live (Linux/Mac) or MiKTeX (Windows).
 
