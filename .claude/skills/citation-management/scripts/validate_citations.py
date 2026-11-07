@@ -116,13 +116,16 @@ def main():
     cite_set = set(cite_keys)
     bib_set = set(bib_keys)
 
+    # "issues" are errors (they make the script exit with code 1).
+    # "warnings" are reported but do not fail the check (unused bib entries).
     issues = 0
+    warnings = 0
 
     # 1. Missing citations
     missing = cite_set - bib_set
     if missing:
         print(f"\n## MISSING CITATIONS ({len(missing)})")
-        print("These \\cite{{key}} are used in .tex but not defined in .bib:")
+        print("These \\cite{key} keys are used in .tex but not defined in .bib:")
         for key in sorted(missing):
             count = cite_keys.count(key)
             print(f"  - {key} (used {count}x)")
@@ -131,10 +134,11 @@ def main():
     # 2. Unused bib entries
     unused = bib_set - cite_set
     if unused:
-        print(f"\n## UNUSED BIB ENTRIES ({len(unused)})")
+        print(f"\n## UNUSED BIB ENTRIES ({len(unused)}) [warning]")
         print("These entries are in .bib but never cited:")
         for key in sorted(unused):
             print(f"  - {key}")
+        warnings += len(unused)
 
     # 3. Duplicate bib keys
     dup_bib = find_duplicates(extract_bib_keys(bib_content))
@@ -176,7 +180,9 @@ def main():
     if args.check_figures:
         fig_dir = args.figures_dir or os.path.dirname(tex_files[0]) if tex_files else "."
         fig_refs = extract_figure_refs(all_tex)
-        for fig in fig_refs:
+        # Check each distinct file once, so a figure included twice is not
+        # counted as two missing files (duplicates are reported below).
+        for fig in sorted(set(fig_refs)):
             fig_path = os.path.join(fig_dir, fig)
             if not os.path.exists(fig_path):
                 print(f"\n## MISSING FIGURE: {fig}")
@@ -197,10 +203,11 @@ def main():
     print(f"  Bib entries: {len(bib_set)}")
     print(f"  Labels defined: {len(set(labels))}")
     print(f"  References used: {len(set(refs))}")
-    print(f"  Issues found: {issues}")
+    print(f"  Issues found: {issues} (errors: missing citations, duplicates, undefined references, missing figures)")
+    print(f"  Warnings: {warnings} (unused bib entries, not counted as issues)")
 
     if issues == 0:
-        print("  All checks passed!")
+        print("  All checks passed!" if warnings == 0 else f"  No errors found ({warnings} warning(s) above).")
 
     if args.fix and missing:
         print(f"\n## AUTO-FIX: Generating placeholder entries for {len(missing)} missing keys")

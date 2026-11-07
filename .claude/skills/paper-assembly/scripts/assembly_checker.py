@@ -87,10 +87,13 @@ EXPECTED_SECTIONS = [
 def find_artifacts(base_dir: str, phase: dict) -> list[str]:
     """Find artifacts for a pipeline phase."""
     found = []
-    search_dirs = [base_dir]
+    # Normalise paths so that "." and the base folder count as one folder.
+    # Without this, a pattern of "." made every top-level file appear twice
+    # (once as "main.tex" and once as "./main.tex").
+    search_dirs = [os.path.normpath(base_dir)]
     for pattern_dir in phase["patterns"]:
-        candidate = os.path.join(base_dir, pattern_dir)
-        if os.path.isdir(candidate):
+        candidate = os.path.normpath(os.path.join(base_dir, pattern_dir))
+        if os.path.isdir(candidate) and candidate not in search_dirs:
             search_dirs.append(candidate)
 
     for search_dir in search_dirs:
@@ -99,12 +102,12 @@ def find_artifacts(base_dir: str, phase: dict) -> list[str]:
                 # Check for directory
                 dpath = os.path.join(search_dir, artifact_pattern.rstrip("/"))
                 if os.path.isdir(dpath):
-                    found.append(dpath)
+                    found.append(os.path.normpath(dpath))
             else:
                 matches = glob.glob(os.path.join(search_dir, artifact_pattern))
-                found.extend(matches)
+                found.extend(os.path.normpath(m) for m in matches)
 
-    # Deduplicate
+    # Deduplicate (paths are normalised above, so the same file matches once)
     return sorted(set(found))
 
 

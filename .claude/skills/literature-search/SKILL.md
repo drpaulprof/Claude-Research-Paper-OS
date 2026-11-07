@@ -18,9 +18,11 @@ Search multiple academic databases to find relevant papers.
 ```bash
 python .claude/skills/deep-research/scripts/search_semantic_scholar.py \
   --query "QUERY" --max-results 20 --year-range 2022-2026 \
-  --api-key "$(grep S2_API_Key /Users/lingzhi/Code/keys.md 2>/dev/null | cut -d: -f2 | tr -d ' ')" \
+  ${SEMANTIC_SCHOLAR_API_KEY:+--api-key "$SEMANTIC_SCHOLAR_API_KEY"} \
   -o results_s2.jsonl
 ```
+
+The API key is optional. Semantic Scholar works without one, with lower rate limits. To use a free key, set it once in your shell (for example `export SEMANTIC_SCHOLAR_API_KEY=your-key`). The `${SEMANTIC_SCHOLAR_API_KEY:+...}` part adds `--api-key` only when that variable is set, so the same command works on any computer. Never paste the key itself into this file.
 
 Key flags: `--peer-reviewed-only`, `--top-conferences`, `--min-citations N`, `--venue NeurIPS ICML`
 
