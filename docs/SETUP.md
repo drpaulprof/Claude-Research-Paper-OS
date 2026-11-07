@@ -79,15 +79,26 @@ compile_command: >
   pdflatex -interaction=nonstopmode main.tex
 ```
 
-### Step 5: Install Python dependencies (optional)
+### Step 5: Python dependencies (optional)
 
-Some skills include Python scripts. Install their dependencies if you want to use them.
+The scripts the 6 agents use need only Python 3.8+ and its standard library. Nothing extra has to be installed for them.
 
-```bash
-pip install requests beautifulsoup4 bibtexparser
-```
+- `citation-management/scripts/validate_citations.py`
+- `deep-research/scripts/search_semantic_scholar.py`
+- `literature-search/scripts/search_crossref.py`
+- `literature-search/scripts/download_arxiv_source.py`
+- `latex-formatting/scripts/latex_checker.py` and `clean_latex.py`
+- `paper-assembly/scripts/assembly_checker.py`
+- `paper-compilation/scripts/compile_paper.py`
 
-These are needed for citation validation, Semantic Scholar search, and CrossRef search scripts.
+Some other skills need extra packages, only if you use them. For example `figure-generation` needs `matplotlib`, `data-analysis` needs `numpy`, `scipy` and `pandas`, and some PDF scripts need `pypdf` or `PyMuPDF`. Check the `import` lines of a script before running it.
+
+The search scripts need internet access to api.semanticscholar.org, api.crossref.org and arxiv.org.
+
+### Step 5b: Optional API keys
+
+- **Semantic Scholar** (free, optional) -- pass `--api-key` to the search script for higher rate limits.
+- **OpenRouter or Parallel** (paid) -- needed only by these claude-scientific-writer skills: research-lookup, parallel-web, generate-image, infographics, scientific-schematics, scientific-slides, paper-2-web and some markitdown features. Set `OPENROUTER_API_KEY` or `PARALLEL_API_KEY` only if you want to pay for them.
 
 ### Step 6: Verify the setup
 
@@ -102,7 +113,7 @@ In Claude Code, say:
 List all available agents and skills
 ```
 
-Claude should show you the 6 agents and describe the available skill packs.
+Claude should show you the 6 agents and list the 65 skills. Start `claude` from the project's top folder, because all script paths are relative to it.
 
 ---
 
@@ -126,14 +137,12 @@ your-paper/
 │   │   ├── latex-compiler.md
 │   │   └── deep-researcher.md
 │   └── skills/
-│       ├── agent-research-skills/
-│       ├── academic-research-skills/
-│       ├── creative-writing-skills/
-│       ├── academic-paper-skills/
-│       ├── claude-scientific-writer/
-│       ├── paper-writer-skill/
-│       ├── humanizer/
-│       └── content-research-writer/
+│       ├── <skill-name>/SKILL.md     <- 65 skill folders (latex-formatting/, humanizer/, ...)
+│       ├── agent-research-skills/    <- pack README, LICENSE, MOVED_SKILLS.md
+│       ├── academic-research-skills/ <- pack README, LICENSE, shared/
+│       ├── creative-writing-skills/  <- pack README, LICENSE
+│       ├── academic-paper-skills/    <- pack README, LICENSE, examples
+│       └── claude-scientific-writer/ <- pack README, LICENSE, unused skills
 ```
 
 ---
@@ -190,11 +199,7 @@ Make sure `.claude/` is in your project root (the directory where you run `claud
 
 ### Python scripts fail
 
-Install the required dependencies.
-
-```bash
-pip install requests beautifulsoup4 bibtexparser pylatexenc
-```
+Make sure you started `claude` from the project's top folder, because the script paths start with `.claude/skills/`. The core scripts need only the Python standard library. If a different script fails with `ModuleNotFoundError`, install only the package it names.
 
 ### Docker compilation fails
 
@@ -207,11 +212,11 @@ docker run --rm -v "$(pwd)":/data blang/latex:ubuntu pdflatex --version
 
 ### Skills directory is too large
 
-The full skills directory is about 30MB. If you want a lighter setup, you can remove skill packs you do not need. At minimum, keep these.
+If you want a lighter setup, you can remove skill folders you do not need. At minimum, keep these.
 
-- `agent-research-skills/` -- Core research and writing pipeline
+- The agent-research skills the agents call: `citation-management/`, `deep-research/`, `literature-search/`, `latex-formatting/`, `paper-assembly/`, `paper-writing-section/`
 - `humanizer/` -- AI pattern removal
-- `academic-research-skills/` -- Quality checks
+- `academic-paper/` -- Writing quality check (`references/writing_quality_check.md`)
 
 ### Claude does not auto-trigger skills
 

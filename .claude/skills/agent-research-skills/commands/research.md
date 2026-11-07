@@ -20,11 +20,11 @@ You are conducting a systematic academic literature review on: **$ARGUMENTS**
 
 ## Setup
 
-1. Read `~/.claude/skills/deep-research/SKILL.md` for the workflow overview
+1. Read `.claude/skills/deep-research/SKILL.md` for the workflow overview
 2. Create output directory: `~/deep-research-output/{slug}/` with phase subdirectories
 3. Read Semantic Scholar API key from `~/keys.md` (field `S2_API_Key`)
 
-## Scripts (all at `~/.claude/skills/deep-research/scripts/`)
+## Scripts (all at `.claude/skills/deep-research/scripts/`)
 
 | Script | Purpose |
 |--------|---------|
@@ -36,7 +36,7 @@ You are conducting a systematic academic literature review on: **$ARGUMENTS**
 | `bibtex_manager.py` | Generate BibTeX from JSONL |
 | `compile_report.py` | Compile notes into final report with citations |
 
-Invoke as: `python ~/.claude/skills/deep-research/scripts/<name>.py <args>`
+Invoke as: `python .claude/skills/deep-research/scripts/<name>.py <args>`
 
 ## Output Structure
 
@@ -77,15 +77,15 @@ Invoke as: `python ~/.claude/skills/deep-research/scripts/<name>.py <args>`
 ### Phase 2: Survey
 1. Write `~/deep-research-output/{slug}/phase2_survey/paper_finder_config.yaml` covering 2023-2025
 2. **paper_finder (primary)**: Run scrape with broader config (if available)
-3. **Semantic Scholar (supplementary)**: `python ~/.claude/skills/deep-research/scripts/search_semantic_scholar.py --query "..." --peer-reviewed-only --max-results 100 --api-key <key> -o ~/deep-research-output/{slug}/phase2_survey/search_results/s2_results.jsonl`
-4. **arXiv (preprints)**: `python ~/.claude/skills/deep-research/scripts/search_arxiv.py --query "..." --max-results 50 -o ~/deep-research-output/{slug}/phase2_survey/search_results/arxiv_results.jsonl`
-5. Merge: `python ~/.claude/skills/deep-research/scripts/paper_db.py merge --inputs ~/deep-research-output/{slug}/phase1_frontier/search_results/*.jsonl ~/deep-research-output/{slug}/phase2_survey/search_results/*.jsonl --output ~/deep-research-output/{slug}/paper_db.jsonl`
-6. Filter to 35-80 papers: `python ~/.claude/skills/deep-research/scripts/paper_db.py filter --input ~/deep-research-output/{slug}/paper_db.jsonl -o ~/deep-research-output/{slug}/paper_db.jsonl --min-score 0.80 --max-papers 70`
+3. **Semantic Scholar (supplementary)**: `python .claude/skills/deep-research/scripts/search_semantic_scholar.py --query "..." --peer-reviewed-only --max-results 100 --api-key <key> -o ~/deep-research-output/{slug}/phase2_survey/search_results/s2_results.jsonl`
+4. **arXiv (preprints)**: `python .claude/skills/deep-research/scripts/search_arxiv.py --query "..." --max-results 50 -o ~/deep-research-output/{slug}/phase2_survey/search_results/arxiv_results.jsonl`
+5. Merge: `python .claude/skills/deep-research/scripts/paper_db.py merge --inputs ~/deep-research-output/{slug}/phase1_frontier/search_results/*.jsonl ~/deep-research-output/{slug}/phase2_survey/search_results/*.jsonl --output ~/deep-research-output/{slug}/paper_db.jsonl`
+6. Filter to 35-80 papers: `python .claude/skills/deep-research/scripts/paper_db.py filter --input ~/deep-research-output/{slug}/paper_db.jsonl -o ~/deep-research-output/{slug}/paper_db.jsonl --min-score 0.80 --max-papers 70`
 7. Write `~/deep-research-output/{slug}/phase2_survey/survey.md`
 
 ### Phase 3: Deep Dive
 - Select 8-15 papers, write rationale to `~/deep-research-output/{slug}/phase3_deep_dive/selection.md`
-- Download PDFs: `python ~/.claude/skills/deep-research/scripts/download_papers.py --jsonl ~/deep-research-output/{slug}/paper_db.jsonl --output-dir ~/deep-research-output/{slug}/phase3_deep_dive/papers/ --sort-by-citations --max-downloads 15`
+- Download PDFs: `python .claude/skills/deep-research/scripts/download_papers.py --jsonl ~/deep-research-output/{slug}/paper_db.jsonl --output-dir ~/deep-research-output/{slug}/phase3_deep_dive/papers/ --sort-by-citations --max-downloads 15`
 - Read via `Read` tool (PDFs) or `WebFetch` (ar5iv HTML: `https://ar5iv.labs.arxiv.org/html/{arxiv_id}`)
 - Write structured notes to `~/deep-research-output/{slug}/phase3_deep_dive/deep_dive.md`
 
@@ -99,7 +99,7 @@ Invoke as: `python ~/.claude/skills/deep-research/scripts/<name>.py <args>`
 - Write `~/deep-research-output/{slug}/phase5_synthesis/synthesis.md`, `~/deep-research-output/{slug}/phase5_synthesis/gaps.md`
 
 ### Phase 6: Compilation
-- Run: `python ~/.claude/skills/deep-research/scripts/compile_report.py --topic-dir ~/deep-research-output/{slug}/`
+- Run: `python .claude/skills/deep-research/scripts/compile_report.py --topic-dir ~/deep-research-output/{slug}/`
 - Mark preprint citations with `(preprint)` suffix
 - Structure: Introduction → Background → Taxonomy → Deep Analysis → Applications → Open Problems → References
 
@@ -107,4 +107,4 @@ Invoke as: `python ~/.claude/skills/deep-research/scripts/<name>.py <args>`
 - **Peer-reviewed papers first**, arXiv as supplement
 - Save after each phase (incremental progress)
 - Use `[@key]` citation format; mark `(preprint)` for non-reviewed papers
-- Read `~/.claude/skills/deep-research/references/workflow-phases.md` for detailed methodology
+- Read `.claude/skills/deep-research/references/workflow-phases.md` for detailed methodology

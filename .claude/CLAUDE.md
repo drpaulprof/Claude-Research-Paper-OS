@@ -4,7 +4,7 @@
 
 ## What This Does
 
-This configuration turns Claude Code into a full academic research and paper-writing system. It provides 6 specialized agents, 47+ skills across 8 skill packs, and an orchestrated pipeline that takes you from literature search to submission-ready manuscript.
+This configuration turns Claude Code into a full academic research and paper-writing system. It provides 6 specialized agents, 65 skills drawn from 8 skill packs, and an orchestrated pipeline that takes you from literature search to submission-ready manuscript.
 
 ## How Auto-Calling Works
 
@@ -44,8 +44,12 @@ your-project/
   .claude/
     CLAUDE.md           <- This file
     agents/             <- 6 specialized agents
-    skills/             <- 8 skill packs, 47+ skills
+    skills/             <- 65 skills, one folder each (skills/<name>/SKILL.md)
 ```
+
+Claude Code only finds a skill at `.claude/skills/<name>/SKILL.md`. Each original pack folder (for example `agent-research-skills/`) now keeps only its README, LICENSE and a `MOVED_SKILLS.md` note.
+
+All script paths in this file and in the agents are relative to the project's top folder, so always start `claude` from that folder.
 
 ---
 
@@ -86,11 +90,11 @@ Claude reads this map and automatically invokes the right skills based on what y
 ### When Writing or Rewriting ANY Section
 1. **paper-writing-section** -- Section-specific writing guidance
 2. **humanizer** -- Anti-AI pattern check on every paragraph
-3. **academic-paper (writing quality check)** -- Quality rules from academic-research-skills
+3. **academic-paper** -- Writing quality check (`.claude/skills/academic-paper/references/writing_quality_check.md`)
 4. **cw-prose-writing** -- Narrative flow, sentence rhythm, natural prose style
 5. **cw-story-critique** -- Critique flow, pacing, and readability
-6. **claude-scientific-writer** -- Scientific writing conventions
-7. **academic-paper-skills (strategist + composer)** -- Planning and writing with quality checkpoints
+6. **scientific-writing** -- Scientific writing conventions (from claude-scientific-writer)
+7. **academic-paper-strategist** then **academic-paper-composer** -- Planning and writing with quality checkpoints
 
 ### When Writing the Abstract
 1. **paper-writing-section abstract** -- Abstract-specific guidance
@@ -126,9 +130,13 @@ Claude reads this map and automatically invokes the right skills based on what y
 5. **paper-assembly** -- End-to-end pipeline check
 
 ### For Deep Research Questions
-1. **deep-research** -- 6-phase systematic literature survey
-2. **literature-search** -- Multi-source academic search
-3. **novelty-assessment** -- Check if claims are novel
+1. **deep-research** -- 6-phase systematic literature survey (from agent-research-skills, has the search scripts)
+2. **academic-deep-research** -- 13-agent research team with fact-check and systematic review modes (from academic-research-skills)
+3. **literature-search** -- Multi-source academic search
+4. **novelty-assessment** -- Check if claims are novel
+
+### Skills That Need Paid API Keys (Do Not Use Without the User's Approval)
+research-lookup, parallel-web, generate-image, infographics, scientific-schematics, scientific-slides, paper-2-web and some markitdown features call paid services and need `OPENROUTER_API_KEY` or `PARALLEL_API_KEY`. Use the free search scripts above instead unless the user says otherwise.
 
 ---
 
@@ -136,22 +144,22 @@ Claude reads this map and automatically invokes the right skills based on what y
 
 ```bash
 # Validate all citations
-python ~/.claude/skills/agent-research-skills/skills/citation-management/scripts/validate_citations.py --tex main.tex --bib references.bib
+python .claude/skills/citation-management/scripts/validate_citations.py --tex main.tex --bib references.bib
 
 # Check LaTeX formatting
-python ~/.claude/skills/agent-research-skills/skills/latex-formatting/scripts/latex_checker.py main.tex
+python .claude/skills/latex-formatting/scripts/latex_checker.py main.tex
 
 # Clean LaTeX artifacts
-python ~/.claude/skills/agent-research-skills/skills/latex-formatting/scripts/clean_latex.py .
+python .claude/skills/latex-formatting/scripts/clean_latex.py .
 
 # Search Semantic Scholar
-python ~/.claude/skills/agent-research-skills/skills/deep-research/scripts/search_semantic_scholar.py --query "YOUR QUERY" --max-results 20
+python .claude/skills/deep-research/scripts/search_semantic_scholar.py --query "YOUR QUERY" --max-results 20
 
 # Search CrossRef
-python ~/.claude/skills/agent-research-skills/skills/literature-search/scripts/search_crossref.py --query "YOUR QUERY" --rows 10
+python .claude/skills/literature-search/scripts/search_crossref.py --query "YOUR QUERY" --rows 10
 
 # Check paper assembly
-python ~/.claude/skills/agent-research-skills/skills/paper-assembly/scripts/assembly_checker.py --dir . --verbose
+python .claude/skills/paper-assembly/scripts/assembly_checker.py --dir . --verbose
 ```
 
 ---

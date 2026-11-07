@@ -2,7 +2,7 @@
 
 **An all-in-one agentic research system that turns Claude Code into an autonomous academic paper production pipeline.**
 
-6 specialized agents. 47+ modular skills across 8 skill packs. One command to go from topic to submission-ready manuscript.
+6 specialized agents. 65 modular skills drawn from 8 skill packs. One command to go from topic to submission-ready manuscript.
 
 ---
 
@@ -82,15 +82,13 @@ Claude-Research-Paper-OS/
 │   │   ├── humanizer-check.md             <- Removes AI writing patterns
 │   │   ├── latex-compiler.md              <- Compiles and checks LaTeX
 │   │   └── deep-researcher.md             <- Academic literature search
-│   └── skills/                            <- 8 skill packs, 47+ skills
-│       ├── agent-research-skills/         <- 31 skills (full research pipeline)
-│       ├── academic-research-skills/      <- 4 skills (quality + review)
-│       ├── creative-writing-skills/       <- 6 skills (prose + narrative)
-│       ├── academic-paper-skills/         <- 2 skills (strategist + composer)
-│       ├── claude-scientific-writer/      <- 1 skill (scientific conventions)
-│       ├── paper-writer-skill/            <- 1 skill (section templates)
-│       ├── humanizer/                     <- 1 skill (AI pattern removal)
-│       └── content-research-writer/       <- 1 skill (research-backed writing)
+│   └── skills/                            <- 65 skills, one folder each
+│       ├── <skill-name>/SKILL.md          <- e.g. latex-formatting/, humanizer/, cw-prose-writing/
+│       ├── agent-research-skills/         <- pack README, LICENSE, MOVED_SKILLS.md
+│       ├── academic-research-skills/      <- pack README, LICENSE, shared/ files
+│       ├── creative-writing-skills/       <- pack README, LICENSE
+│       ├── academic-paper-skills/         <- pack README, LICENSE, examples
+│       └── claude-scientific-writer/      <- pack README, LICENSE, unused skills
 ├── docs/
 │   ├── AGENTS.md                          <- Agent documentation
 │   ├── SKILLS.md                          <- Skills documentation
@@ -141,9 +139,9 @@ See [docs/AGENTS.md](docs/AGENTS.md) for full details on each agent.
 
 ---
 
-## The 47+ Skills
+## The 65 Skills
 
-Skills are specialized knowledge and tool packages that agents draw on. They are organized into 8 packs from different open-source contributors.
+Skills are specialized knowledge and tool packages that agents draw on. They come from 8 packs by different open-source contributors. Claude Code only finds a skill at `.claude/skills/<name>/SKILL.md`, so every skill sits in its own top-level folder. Each pack folder keeps its README and LICENSE.
 
 | Skill Pack | Skills | What It Covers |
 |---|---|---|
@@ -151,7 +149,7 @@ Skills are specialized knowledge and tool packages that agents draw on. They are
 | **academic-research-skills** (Imbad0202) | 4 | Writing quality, peer review, deep research |
 | **creative-writing-skills** (haowjy) | 6 | Prose quality, narrative flow, story critique |
 | **academic-paper-skills** (lishix520) | 2 | Strategic planning and compositional writing |
-| **claude-scientific-writer** (K-Dense-AI) | 1 | Scientific writing conventions |
+| **claude-scientific-writer** (K-Dense-AI) | 19 | Scientific writing, peer review, posters, grants (8 need paid API keys) |
 | **paper-writer-skill** (kgraph57) | 1 | Section templates and writing workflow |
 | **humanizer** | 1 | AI pattern detection and removal |
 | **content-research-writer** | 1 | Research-backed content with citations |
@@ -170,7 +168,7 @@ Phase 1: RESEARCH
   └─ literature-search + novelty-assessment
 
 Phase 2: STRUCTURE
-  └─ strategist (outline and architecture)
+  └─ academic-paper-strategist (outline and architecture)
   └─ research-planning (gap analysis)
 
 Phase 3: WRITING
@@ -219,7 +217,9 @@ The humanizer runs multiple passes. After writing, after review, and before fina
 
 - **Claude Code** -- [Install Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview)
 - **Docker** (optional) -- For LaTeX compilation. If you do not use Docker, change the compile command in `.claude/CLAUDE.md` to your local `pdflatex` path.
-- **Python 3.8+** (optional) -- Some skills include Python scripts for citation validation, formatting checks, and academic search.
+- **Python 3.8+** (optional) -- Some skills include Python scripts. The scripts the 6 agents use (citation validation, LaTeX checks, Semantic Scholar, CrossRef and arXiv search) need only the standard library.
+- **Paid API keys** (optional) -- 8 skills from claude-scientific-writer need `OPENROUTER_API_KEY` or `PARALLEL_API_KEY`. Everything else works without them.
+- **Start Claude from the project's top folder.** Script paths are relative to it (`.claude/skills/...`).
 
 ---
 

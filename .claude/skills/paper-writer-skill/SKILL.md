@@ -76,7 +76,7 @@ Based on paper type and study design, select the appropriate reporting guideline
 | Animal research | ARRIVE 2.0 | `references/reporting-guidelines-full.md` |
 | Health economics | CHEERS 2022 | `references/reporting-guidelines-full.md` |
 
-Read `~/.claude/skills/paper-writer/references/reporting-guidelines.md` (summary) or `references/reporting-guidelines-full.md` (comprehensive) and note the key checklist items for the selected guideline. These items will be checked throughout the writing process.
+Read `.claude/skills/paper-writer-skill/references/reporting-guidelines.md` (summary) or `references/reporting-guidelines-full.md` (comprehensive) and note the key checklist items for the selected guideline. These items will be checked throughout the writing process.
 
 #### Step 0.3: Create Project Directory
 
@@ -238,7 +238,7 @@ Read `~/.claude/skills/paper-writer/references/reporting-guidelines.md` (summary
     └── timeline.md
 ```
 
-Read `~/.claude/skills/paper-writer/templates/project-init.md` with the `Read` tool and use it to generate `README.md`. For Case Reports, use `project-init-case.md` instead.
+Read `.claude/skills/paper-writer-skill/templates/project-init.md` with the `Read` tool and use it to generate `README.md`. For Case Reports, use `project-init-case.md` instead.
 
 **File numbering follows the recommended writing order**, not the reading order. This is intentional.
 
@@ -247,7 +247,7 @@ Read `~/.claude/skills/paper-writer/templates/project-init.md` with the `Read` t
 If the user has existing research data (clinical records, CSV files, statistical output, etc.):
 
 1. Create `data/raw/`, `data/processed/`, `data/analysis/` directories
-2. Read `~/.claude/skills/paper-writer/templates/data-management.md` for the full template
+2. Read `.claude/skills/paper-writer-skill/templates/data-management.md` for the full template
 3. Ask the user to place raw data files in `data/raw/` — these files are **READ-ONLY** from this point
 4. Create `data/raw/README.md` documenting the data source, extraction date, and IRB information
 5. Create `data/data-dictionary.md` listing all variables with types, ranges, and labels
@@ -262,7 +262,7 @@ If the user has existing research data (clinical records, CSV files, statistical
 
 #### Step 0.5: Data Analysis
 
-If the user has quantitative data ready for analysis, Claude Code can execute Python scripts directly. Read `~/.claude/skills/paper-writer/templates/analysis-workflow.md` for the full workflow.
+If the user has quantitative data ready for analysis, Claude Code can execute Python scripts directly. Read `.claude/skills/paper-writer-skill/templates/analysis-workflow.md` for the full workflow.
 
 **Available analysis scripts:**
 
@@ -338,7 +338,7 @@ https://pubmed.ncbi.nlm.nih.gov/?term=search+terms&sort=date
 
 #### Step 1.2: Build Literature Matrix
 
-Read `~/.claude/skills/paper-writer/templates/literature-matrix.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/literature-matrix.md` with the `Read` tool.
 
 For each relevant paper found, extract and organize:
 
@@ -361,7 +361,7 @@ For the 3-5 most important papers, create individual notes in `00_literature/key
 
 Create `01_outline.md` with the paper skeleton.
 
-Read `~/.claude/skills/paper-writer/references/imrad-guide.md` with the `Read` tool for the detailed IMRAD structure. For Case Reports, this guide does not apply directly — use the CARE structure instead.
+Read `.claude/skills/paper-writer-skill/references/imrad-guide.md` with the `Read` tool for the detailed IMRAD structure. For Case Reports, this guide does not apply directly — use the CARE structure instead.
 
 The outline should specify:
 
@@ -375,7 +375,7 @@ The outline should specify:
 
 ### Phase 2.5: Tables & Figures
 
-Read `~/.claude/skills/paper-writer/references/tables-figures-guide.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/references/tables-figures-guide.md` with the `Read` tool.
 
 Tables and figures are the backbone of a paper — many reviewers look at the abstract, then the tables/figures, before reading the text. **Design them before writing prose** so the text can reference them naturally.
 
@@ -413,7 +413,7 @@ Create caption files in `figures/` directory:
 
 #### Step 2.5.4: Graphical Abstract (if required)
 
-If the journal requires or encourages a graphical abstract, read `~/.claude/skills/paper-writer/templates/graphical-abstract.md` and plan the visual summary.
+If the journal requires or encourages a graphical abstract, read `.claude/skills/paper-writer-skill/templates/graphical-abstract.md` and plan the visual summary.
 
 **Get user review on table/figure plan before proceeding to drafting.**
 
@@ -427,7 +427,7 @@ If the journal requires or encourages a graphical abstract, read `~/.claude/skil
 
 ##### Step 3.1: Methods & Results (Write as a pair)
 
-Read `~/.claude/skills/paper-writer/templates/methods.md` and `~/.claude/skills/paper-writer/templates/results.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/methods.md` and `.claude/skills/paper-writer-skill/templates/results.md` with the `Read` tool.
 
 **Methods rules:**
 - Reproducibility is everything
@@ -446,7 +446,7 @@ Write `sections/02_methods.md` and `sections/03_results.md` together, ensuring p
 
 ##### Step 3.2: Introduction (Paragraph 3) & Conclusion (Write as a pair)
 
-Read `~/.claude/skills/paper-writer/templates/introduction.md` and `~/.claude/skills/paper-writer/templates/conclusion.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/introduction.md` and `.claude/skills/paper-writer-skill/templates/conclusion.md` with the `Read` tool.
 
 **Why write Paragraph 3 first?** The study objective (Introduction P3) and the conclusion must mirror each other. Writing them together guarantees alignment. Paragraphs 1-2 provide background that funnels toward the objective — they are easier to write once the objective is locked.
 
@@ -464,12 +464,12 @@ Write the final paragraph of `sections/04_introduction.md` and `sections/06_conc
 
 ##### Step 3.3: Discussion
 
-Read `~/.claude/skills/paper-writer/templates/discussion.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/discussion.md` with the `Read` tool.
 
 **Discussion structure:**
 1. Summary of main findings
 2-N. Comparison with prior literature (use `00_literature/literature-matrix.md`)
-N+1. Limitations — read `~/.claude/skills/paper-writer/templates/limitations-guide.md` for categories, templates, and bilingual examples
+N+1. Limitations — read `.claude/skills/paper-writer-skill/templates/limitations-guide.md` for categories, templates, and bilingual examples
 N+2. Clinical implications / future directions
 
 **Discussion rules:**
@@ -485,7 +485,7 @@ Now write paragraphs 1-2 of `sections/04_introduction.md`. The background should
 
 ##### Step 3.5: Abstract
 
-Read `~/.claude/skills/paper-writer/templates/abstract.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/abstract.md` with the `Read` tool.
 
 Write `sections/07_abstract.md` as a structured abstract:
 - Background/Objective (1-2 sentences)
@@ -511,7 +511,7 @@ Write `sections/08_title.md` with 3-5 title candidates. Evaluate each against:
 
 ##### Step 3.1-CR: Case Presentation
 
-Read `~/.claude/skills/paper-writer/templates/case-report.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/case-report.md` with the `Read` tool.
 
 Write `02_case.md` following the CARE structure:
 1. Patient information (demographics, history)
@@ -531,7 +531,7 @@ Write `02_case.md` following the CARE structure:
 
 ##### Step 3.2-CR: Discussion
 
-Read `~/.claude/skills/paper-writer/templates/discussion.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/discussion.md` with the `Read` tool.
 
 Write `04_discussion.md`:
 1. Why this case is significant (clinical lesson)
@@ -543,7 +543,7 @@ Keep it focused and shorter than in an Original Article.
 
 ##### Step 3.3-CR: Introduction
 
-Read `~/.claude/skills/paper-writer/templates/case-introduction.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/case-introduction.md` with the `Read` tool.
 
 Write `03_introduction.md`:
 1. Brief background on the condition
@@ -554,7 +554,7 @@ Write the Introduction AFTER the Case section — you need to know the full case
 
 ##### Step 3.4-CR: Abstract
 
-Read `~/.claude/skills/paper-writer/templates/case-abstract.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/case-abstract.md` with the `Read` tool.
 
 Write `05_abstract.md` using the CARE abstract structure:
 - Background (1-2 sentences: why this case is worth reporting)
@@ -580,7 +580,7 @@ Review articles synthesize existing literature on a topic. The structure is them
 
 ##### Step 3.1-RA: Thematic Sections
 
-Read `~/.claude/skills/paper-writer/templates/discussion.md` for general writing guidance.
+Read `.claude/skills/paper-writer-skill/templates/discussion.md` for general writing guidance.
 
 Organize the body into thematic sections based on the outline. Common structures:
 1. **Chronological**: Evolution of understanding over time
@@ -629,7 +629,7 @@ Write title candidates. For review articles:
 
 #### 3-D: Systematic Review Workflow
 
-Read `~/.claude/skills/paper-writer/templates/sr-outline.md` with the `Read` tool for the complete PRISMA 2020-compliant template.
+Read `.claude/skills/paper-writer-skill/templates/sr-outline.md` with the `Read` tool for the complete PRISMA 2020-compliant template.
 
 Systematic reviews follow a strict, pre-registered protocol. The template provides the full structure with PRISMA 2020 checklist item numbers.
 
@@ -710,7 +710,7 @@ Short, direct titles work best. No need for elaborate structure.
 
 ### Phase 4: Humanize
 
-Read `~/.claude/skills/paper-writer/references/humanizer-academic.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/references/humanizer-academic.md` with the `Read` tool.
 
 After drafting, run a humanization pass on every section to remove AI-generated writing patterns.
 
@@ -820,7 +820,7 @@ After humanization:
 
 ### Phase 5: References
 
-Read `~/.claude/skills/paper-writer/references/citation-guide.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/references/citation-guide.md` with the `Read` tool.
 
 Build `references/09_references.md` (or `references/07_references.md` for Case Reports):
 
@@ -832,7 +832,7 @@ Build `references/09_references.md` (or `references/07_references.md` for Case R
 
 ### Phase 6: Quality Review
 
-Read `~/.claude/skills/paper-writer/references/section-checklist.md` with the `Read` tool. For Case Reports, also check the CARE-specific items in `templates/case-report.md`.
+Read `.claude/skills/paper-writer-skill/references/section-checklist.md` with the `Read` tool. For Case Reports, also check the CARE-specific items in `templates/case-report.md`.
 
 Run the quality checklist against each section. Update `checklists/section-quality.md` with results.
 
@@ -852,13 +852,13 @@ Run the quality checklist against each section. Update `checklists/section-quali
 
 ### Phase 7: Pre-Submission
 
-Read `~/.claude/skills/paper-writer/templates/cover-letter.md` and `~/.claude/skills/paper-writer/templates/submission-ready.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/cover-letter.md` and `.claude/skills/paper-writer-skill/templates/submission-ready.md` with the `Read` tool.
 
 Create:
-1. **Title page** — read `~/.claude/skills/paper-writer/templates/title-page.md` for the template (running head, all authors with ORCID, affiliations, word counts, corresponding author, clinical trial registration)
-2. **Highlights / Key Points** — read `~/.claude/skills/paper-writer/templates/highlights.md` and create the appropriate summary box for the target journal (JAMA Key Points, BMJ "What is known", Elsevier Highlights, Lay Summary, etc.)
-3. **Acknowledgments** — read `~/.claude/skills/paper-writer/templates/acknowledgments.md` and draft (non-author contributions, AI tool disclosure, patient acknowledgment)
-4. **Declarations** — read `~/.claude/skills/paper-writer/templates/declarations.md` and complete (Ethics, COI using `references/coi-detailed.md`, Funding, Data Availability, AI Disclosure, CRediT)
+1. **Title page** — read `.claude/skills/paper-writer-skill/templates/title-page.md` for the template (running head, all authors with ORCID, affiliations, word counts, corresponding author, clinical trial registration)
+2. **Highlights / Key Points** — read `.claude/skills/paper-writer-skill/templates/highlights.md` and create the appropriate summary box for the target journal (JAMA Key Points, BMJ "What is known", Elsevier Highlights, Lay Summary, etc.)
+3. **Acknowledgments** — read `.claude/skills/paper-writer-skill/templates/acknowledgments.md` and draft (non-author contributions, AI tool disclosure, patient acknowledgment)
+4. **Declarations** — read `.claude/skills/paper-writer-skill/templates/declarations.md` and complete (Ethics, COI using `references/coi-detailed.md`, Funding, Data Availability, AI Disclosure, CRediT)
 5. Cover letter using the template
 6. `checklists/submission-ready.md` using the template — fill in journal-specific limits from Phase 0
 7. Compile all sections into a single reading-order Markdown file → `submissions/v1_{journal}/compiled-manuscript.md`
@@ -936,7 +936,7 @@ For each comment, use this format:
 
 ### Phase 9: Post-Acceptance
 
-Read `~/.claude/skills/paper-writer/templates/proof-correction.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/templates/proof-correction.md` with the `Read` tool.
 
 After acceptance, the corresponding author receives galley proofs. This is the LAST opportunity to correct errors.
 
@@ -973,7 +973,7 @@ After publication:
 
 ### Phase 10: Rejection & Resubmission
 
-Read `~/.claude/skills/paper-writer/references/desk-rejection-prevention.md` and `references/journal-reformatting.md` with the `Read` tool.
+Read `.claude/skills/paper-writer-skill/references/desk-rejection-prevention.md` and `references/journal-reformatting.md` with the `Read` tool.
 
 #### Step 10.1: Assess the Rejection
 

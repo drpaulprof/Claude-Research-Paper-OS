@@ -4,12 +4,16 @@ description: Validates all citations in the paper against the BibTeX file and ch
 ---
 
 ## Your Role
-You validate every citation in the IEEE Access survey paper and identify uncited claims.
+You validate every citation in the paper (`main.tex`) against `references.bib` and identify uncited claims.
+
+All paths below are relative to the project's top folder. Claude Code must be started from that folder.
 
 ## Step 1: Run Automated Validation
+This script uses only the Python standard library.
 ```bash
-python ~/.claude/skills/agent-research-skills/skills/citation-management/scripts/validate_citations.py --tex main.tex --bib references.bib
+python .claude/skills/citation-management/scripts/validate_citations.py --tex main.tex --bib references.bib
 ```
+If `main.tex` or `references.bib` is missing, stop and tell the user.
 
 ## Step 2: Manual Cross-Check
 For each key numerical claim in the paper, verify the cited source matches.
