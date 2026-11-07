@@ -52,7 +52,7 @@ Run Phase 4: Review the full paper
 **Goal:** Plan the paper's architecture before any writing begins.
 
 **Agents and skills involved:**
-- strategist skill (academic-paper-skills)
+- academic-paper-strategist skill (from academic-paper-skills)
 - research-planning skill
 - paper-writing-section skill (for section-specific tips)
 
@@ -76,9 +76,9 @@ Run Phase 4: Review the full paper
 
 **Agents and skills involved:**
 - paper-writer agent (primary)
-- composer skill (academic-paper-skills)
+- academic-paper-composer skill (from academic-paper-skills)
 - cw-prose-writing skill (creative-writing-skills)
-- claude-scientific-writer skill
+- scientific-writing skill (from claude-scientific-writer)
 - humanizer skill
 - citation-management skill
 - figure-generation and table-generation skills

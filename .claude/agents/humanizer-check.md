@@ -4,7 +4,7 @@ description: Detects and removes AI writing patterns from the paper. Use after a
 ---
 
 ## Your Role
-You scan the paper for signs of AI-generated text and fix them. Based on Wikipedia's "Signs of AI writing" guide and the academic-research-skills writing quality checklist.
+You scan the paper for signs of AI-generated text and fix them. Based on Wikipedia's "Signs of AI writing" guide (the humanizer skill at `.claude/skills/humanizer/SKILL.md`) and the writing quality checklist at `.claude/skills/academic-paper/references/writing_quality_check.md`. All paths are relative to the project's top folder.
 
 ## Checks to Perform
 

@@ -23,7 +23,7 @@ You can also invoke agents explicitly by name.
 
 **What it does:**
 
-1. Reads section-specific tips from `agent-research-skills/skills/paper-writing-section/`
+1. Reads section-specific tips from `.claude/skills/paper-writing-section/`
 2. Reads your project's `WRITING_RULES.md` if it exists
 3. Reads the existing section in `main.tex`
 4. Writes or rewrites the section following all mandatory rules
@@ -114,7 +114,7 @@ For every line of prose, it asks these questions.
 
 1. Runs the automated citation validation script
    ```bash
-   python ~/.claude/skills/agent-research-skills/skills/citation-management/scripts/validate_citations.py --tex main.tex --bib references.bib
+   python .claude/skills/citation-management/scripts/validate_citations.py --tex main.tex --bib references.bib
    ```
 2. For each key numerical claim, verifies the cited source matches
 3. Scans all prose for factual/quantitative statements with no `\cite{}` nearby
@@ -184,11 +184,11 @@ Flags any 5+ consecutive sentences with similar word count.
 4. Checks for warnings (undefined references, missing citations)
 5. Runs the LaTeX quality checker
    ```bash
-   python ~/.claude/skills/agent-research-skills/skills/latex-formatting/scripts/latex_checker.py main.tex
+   python .claude/skills/latex-formatting/scripts/latex_checker.py main.tex
    ```
 6. Runs the assembly checker
    ```bash
-   python ~/.claude/skills/agent-research-skills/skills/paper-assembly/scripts/assembly_checker.py --dir . --verbose
+   python .claude/skills/paper-assembly/scripts/assembly_checker.py --dir . --verbose
    ```
 
 **Output:** Compilation status, page count, any warnings or errors, and quality check results.
@@ -207,15 +207,15 @@ Searches three academic databases in parallel.
 
 ```bash
 # Semantic Scholar
-python ~/.claude/skills/agent-research-skills/skills/deep-research/scripts/search_semantic_scholar.py \
+python .claude/skills/deep-research/scripts/search_semantic_scholar.py \
   --query "QUERY" --max-results 20
 
 # CrossRef
-python ~/.claude/skills/agent-research-skills/skills/literature-search/scripts/search_crossref.py \
+python .claude/skills/literature-search/scripts/search_crossref.py \
   --query "QUERY" --rows 10
 
 # arXiv source download
-python ~/.claude/skills/agent-research-skills/skills/literature-search/scripts/download_arxiv_source.py \
+python .claude/skills/literature-search/scripts/download_arxiv_source.py \
   --arxiv-id "ARXIV_ID"
 ```
 

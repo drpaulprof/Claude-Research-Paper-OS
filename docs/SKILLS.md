@@ -2,7 +2,9 @@
 
 Skills are specialized knowledge and tool packages stored in `.claude/skills/`. Claude draws on them automatically based on the task at hand. You do not need to invoke them manually.
 
-This document covers all 8 skill packs and 47+ individual skills.
+This document covers all 8 skill packs and the 65 skills that load.
+
+Claude Code only discovers a skill at `.claude/skills/<name>/SKILL.md`. For that reason every skill below lives in its own top-level folder, for example `.claude/skills/latex-formatting/`. The original pack folders keep their README, LICENSE and a `MOVED_SKILLS.md` note.
 
 ---
 
@@ -10,14 +12,14 @@ This document covers all 8 skill packs and 47+ individual skills.
 
 Skills are loaded when Claude's auto-trigger map (in `.claude/CLAUDE.md`) matches your request to a skill. For example, when you say "write the introduction," Claude loads the paper-writing-section skill, the humanizer skill, the prose-writing skill, and the writing quality check skill. All run in sequence as part of the writing workflow.
 
-Some skills include Python scripts. These require Python 3.8+ and the dependencies listed in each skill's directory. Most skills are pure-prompt skills that work without any external dependencies.
+Some skills include Python scripts. These require Python 3.10+ and the dependencies listed in each skill's directory. Most skills are pure-prompt skills that work without any external dependencies.
 
 ---
 
 ## Skill Pack 1: agent-research-skills (31 skills)
 
 **Author:** [lingzhi227](https://github.com/lingzhi227)
-**Location:** `.claude/skills/agent-research-skills/skills/`
+**Location:** `.claude/skills/<skill-name>/` (pack notes in `.claude/skills/agent-research-skills/`)
 
 This is the largest and most comprehensive pack. It covers the entire research pipeline from idea generation through submission and rebuttal.
 
@@ -82,7 +84,7 @@ This is the largest and most comprehensive pack. It covers the entire research p
 ## Skill Pack 2: academic-research-skills (4 skills)
 
 **Author:** [Imbad0202](https://github.com/Imbad0202)
-**Location:** `.claude/skills/academic-research-skills/`
+**Location:** `.claude/skills/academic-paper/`, `academic-paper-reviewer/`, `academic-pipeline/`, `academic-deep-research/` (shared files in `.claude/skills/academic-research-skills/shared/`)
 **License:** GPL-3.0
 
 ### Skills
@@ -92,7 +94,7 @@ This is the largest and most comprehensive pack. It covers the entire research p
 | **academic-paper** | Writing quality checklist with 25+ anti-AI checks. The `references/writing_quality_check.md` file is the master quality gate for all writing |
 | **academic-paper-reviewer** | Multi-perspective peer review with 0-100 rubrics across multiple dimensions |
 | **academic-pipeline** | Orchestrates the full research-to-paper pipeline |
-| **deep-research** | 6-phase systematic literature survey with structured methodology |
+| **academic-deep-research** | 13-agent research team with fact-check, Socratic and systematic review modes. Renamed from `deep-research` so it does not clash with the agent-research-skills skill of that name |
 
 The `academic-paper/references/writing_quality_check.md` file is referenced throughout the system as the authoritative list of banned AI terms and quality standards.
 
@@ -101,7 +103,7 @@ The `academic-paper/references/writing_quality_check.md` file is referenced thro
 ## Skill Pack 3: creative-writing-skills (6 skills)
 
 **Author:** [haowjy](https://github.com/haowjy)
-**Location:** `.claude/skills/creative-writing-skills/creative-writing-skills/`
+**Location:** `.claude/skills/cw-*/`
 **License:** Apache-2.0
 
 These skills handle prose quality. Academic writing is still writing, and these skills ensure it reads naturally.
@@ -120,25 +122,49 @@ These skills handle prose quality. Academic writing is still writing, and these 
 ## Skill Pack 4: academic-paper-skills (2 skills)
 
 **Author:** [lishix520](https://github.com/lishix520)
-**Location:** `.claude/skills/academic-paper-skills/`
+**Location:** `.claude/skills/academic-paper-strategist/` and `.claude/skills/academic-paper-composer/`
 **License:** MIT
 
 | Skill | What It Does |
 |---|---|
-| **strategist** | Plans paper structure, identifies key arguments, maps section dependencies, and produces an outline with quality checkpoints at each stage |
-| **composer** | Drafts paper content following the strategist's plan, with built-in quality gates that pause and check work at paragraph boundaries |
+| **academic-paper-strategist** | Plans paper structure, identifies key arguments, maps section dependencies, and produces an outline with quality checkpoints at each stage |
+| **academic-paper-composer** | Drafts paper content following the strategist's plan, with built-in quality gates that pause and check work at paragraph boundaries |
 
 The strategist-then-composer workflow is useful for initial drafting. The strategist plans, then the composer executes with frequent quality checks.
 
 ---
 
-## Skill Pack 5: claude-scientific-writer (1 skill)
+## Skill Pack 5: claude-scientific-writer (19 skills)
 
 **Author:** [K-Dense-AI](https://github.com/K-Dense-AI)
-**Location:** `.claude/skills/claude-scientific-writer/`
+**Location:** `.claude/skills/<skill-name>/` (pack notes in `.claude/skills/claude-scientific-writer/`)
 **License:** MIT
 
-A comprehensive scientific writing toolkit with templates, scripts, and conventions for academic papers. Includes example configurations and API usage patterns. Covers citation formatting, section structure, and scientific terminology conventions.
+The pack shipped three identical copies of 27 skills. The two extra copies were removed after a file-by-file check. 19 skills load.
+
+| Skill | What It Does | Paid key? |
+|---|---|---|
+| **scientific-writing** | Core scientific manuscript writing (IMRaD, reporting guidelines) | No |
+| **sw-citation-management** | Google Scholar and PubMed search, DOI to BibTeX (renamed from `citation-management`) | No |
+| **sw-literature-review** | Systematic reviews across PubMed, arXiv, bioRxiv and more (renamed from `literature-review`) | No |
+| **peer-review** | Systematic peer review toolkit | No |
+| **scholar-evaluation** | ScholarEval quality scoring | No |
+| **scientific-critical-thinking** | Rigor, bias and evidence quality checks | No |
+| **hypothesis-generation** | Testable hypotheses and predictions | No |
+| **venue-templates** | LaTeX templates and rules for journals, conferences and grants | No |
+| **research-grants** | NSF, NIH, DOE and DARPA proposals | No |
+| **latex-posters** | LaTeX research posters | No |
+| **pptx-posters** | Alternate poster guide with an HTML poster template | No |
+| **markitdown** | Convert files to Markdown | Some features |
+| **research-lookup** | Research lookup through Parallel or Perplexity | Yes |
+| **parallel-web** | Web search and extraction through Parallel | Yes |
+| **generate-image** | AI image generation | Yes |
+| **infographics** | AI infographics | Yes |
+| **scientific-schematics** | AI scientific diagrams | Yes |
+| **scientific-slides** | AI slide decks | Yes |
+| **paper-2-web** | Paper to website, video or poster | Yes |
+
+Left in the pack folder on purpose, so they do not load: clinical-decision-support, clinical-reports, treatment-plans, market-research-reports, and document-skills (docx, pdf, pptx, xlsx, which clash with Claude's built-in skills of the same names).
 
 ---
 
@@ -206,8 +232,8 @@ Skills do not run in isolation. Here is how they chain together during common ta
 ```
 paper-writing-section (section tips)
   → cw-prose-writing (sentence rhythm)
-  → claude-scientific-writer (conventions)
-  → academic-paper / composer (quality gates)
+  → scientific-writing (conventions)
+  → academic-paper / academic-paper-composer (quality gates)
   → humanizer (AI pattern check)
   → cw-story-critique (flow check)
 ```
