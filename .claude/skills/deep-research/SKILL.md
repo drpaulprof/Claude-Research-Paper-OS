@@ -18,7 +18,9 @@ Activate this skill when the user wants to:
 This skill conducts systematic academic literature reviews in 6 phases, producing structured notes, a curated paper database, and a synthesized final report. Output is organized **by phase** for clarity.
 
 **Installation**: `.claude/skills/deep-research/` — scripts, references, and this skill definition.
-**Output**: `.//Users/lingzhi/Code/deep-research-output/{slug}/` relative to the current working directory.
+**Output**: `deep-research-output/{slug}/` inside the project's top folder (`{slug}` is a short name for the topic, for example `speech-synthesis`).
+
+**Where to run commands**: run every command from the project's top folder, because the script paths start with `.claude/skills/`. Write every data path in full with the `deep-research-output/{slug}/` prefix. File names in the phase gate table and in the phase steps below (such as `phase1_frontier/frontier.md` or `paper_db.jsonl`) are inside that folder.
 
 ## CRITICAL: Strict Sequential Phase Execution
 
@@ -73,15 +75,17 @@ Before starting Phase N+1, you MUST verify that Phase N's **required output file
 
 ## Search Tools (by priority)
 
-### 1. paper_finder (primary — conference papers only)
-**Location**: `/Users/lingzhi/Code/documents/tool/paper_finder/paper_finder.py`
+### 1. paper_finder (primary when available — conference papers only)
+**Location**: the file named by the `PAPER_FINDER` environment variable.
+
+**Optional external tool, not included in this project.** It was written by the skill's original author and lives outside this repository. To use it, download it yourself and set an environment variable that points to it, for example `export PAPER_FINDER=/path/to/paper_finder.py`. **If `PAPER_FINDER` is not set, skip this tool** and use `search_semantic_scholar.py --peer-reviewed-only --top-conferences --year-range ...` (below) as the main search for conference papers. Every phase still works without paper_finder.
 
 Searches ai-paper-finder.info (HuggingFace Space) for published conference papers. Supports filtering by conference + year. Outputs JSONL with BibTeX.
 
 ```bash
-python /Users/lingzhi/Code/documents/tool/paper_finder/paper_finder.py --mode scrape --config <config.yaml>
-python /Users/lingzhi/Code/documents/tool/paper_finder/paper_finder.py --mode download --jsonl <results.jsonl>
-python /Users/lingzhi/Code/documents/tool/paper_finder/paper_finder.py --list-venues
+python "$PAPER_FINDER" --mode scrape --config <config.yaml>
+python "$PAPER_FINDER" --mode download --jsonl <results.jsonl>
+python "$PAPER_FINDER" --list-venues
 ```
 
 Config example:
@@ -94,16 +98,22 @@ searches:
       iclr: [2024, 2025, 2026]
       icml: [2024, 2025]
 output:
-  root: /Users/lingzhi/Code/deep-research-output/{slug}/phase1_frontier/search_results
+  root: deep-research-output/{slug}/phase1_frontier/search_results
   overwrite: true
 ```
 
 ### 2. search_semantic_scholar.py (supplementary — citation data + broader coverage)
-**Location**: `/Users/lingzhi/.claude/skills/deep-research/scripts/search_semantic_scholar.py`
-Supports `--peer-reviewed-only` and `--top-conferences` filters. API key: `/Users/lingzhi/Code/keys.md` (field `S2_API_Key`)
+**Location**: `.claude/skills/deep-research/scripts/search_semantic_scholar.py`
+Supports `--peer-reviewed-only` and `--top-conferences` filters. API key: optional and free. Set the `SEMANTIC_SCHOLAR_API_KEY` environment variable and add `${SEMANTIC_SCHOLAR_API_KEY:+--api-key "$SEMANTIC_SCHOLAR_API_KEY"}` to the command. It works without a key, with lower rate limits.
+```bash
+python .claude/skills/deep-research/scripts/search_semantic_scholar.py --query "QUERY" --max-results 50 \
+  --peer-reviewed-only --top-conferences --year-range 2023-2026 \
+  ${SEMANTIC_SCHOLAR_API_KEY:+--api-key "$SEMANTIC_SCHOLAR_API_KEY"} \
+  -o deep-research-output/{slug}/phase2_survey/search_results/s2_results.jsonl
+```
 
 ### 3. search_arxiv.py (supplementary — latest preprints)
-**Location**: `/Users/lingzhi/.claude/skills/deep-research/scripts/search_arxiv.py`
+**Location**: `.claude/skills/deep-research/scripts/search_arxiv.py`
 For searching recent papers not yet published at conferences. Mark citations with `(preprint)`.
 
 ### Other Scripts
@@ -124,18 +134,18 @@ For searching recent papers not yet published at conferences. Mark citations wit
 
 ### Phase 1: Frontier
 Search the **latest** conference proceedings and preprints to understand current trends.
-1. Write `phase1_frontier/paper_finder_config.yaml` targeting latest 1-2 years
-2. Run paper_finder scrape
+1. Write `phase1_frontier/paper_finder_config.yaml` targeting latest 1-2 years (only needed when using paper_finder)
+2. Run paper_finder scrape if `PAPER_FINDER` is set. Otherwise run `search_semantic_scholar.py --peer-reviewed-only --top-conferences` for the latest 1-2 years and save to `phase1_frontier/search_results/`
 3. WebSearch for latest accepted paper lists
 4. Identify trending directions, key breakthroughs
 → Output: `phase1_frontier/frontier.md`, `phase1_frontier/search_results/`
 
 ### Phase 2: Survey
 Build a comprehensive landscape with broader time range. Target **35-80 papers** after filtering.
-1. Write `phase2_survey/paper_finder_config.yaml` covering 2023-2025
-2. Run paper_finder + Semantic Scholar + arXiv
-3. Merge all results: `python /Users/lingzhi/.claude/skills/deep-research/scripts/paper_db.py merge`
-4. Filter to 35-80 most relevant: `python /Users/lingzhi/.claude/skills/deep-research/scripts/paper_db.py filter --min-score 0.80 --max-papers 70`
+1. Write `phase2_survey/paper_finder_config.yaml` covering 2023-2025 (only needed when using paper_finder)
+2. Run paper_finder (if available) + Semantic Scholar + arXiv, saving results to `phase2_survey/search_results/`
+3. Merge all results: `python .claude/skills/deep-research/scripts/paper_db.py merge --inputs deep-research-output/{slug}/phase1_frontier/search_results/*.jsonl deep-research-output/{slug}/phase2_survey/search_results/*.jsonl --output deep-research-output/{slug}/paper_db.jsonl`
+4. Filter to 35-80 most relevant: `python .claude/skills/deep-research/scripts/paper_db.py filter --input deep-research-output/{slug}/paper_db.jsonl -o deep-research-output/{slug}/paper_db.jsonl --min-score 0.80 --max-papers 70`
 5. Cluster by theme, write survey notes
 → Output: `phase2_survey/survey.md`, `phase2_survey/search_results/`, `paper_db.jsonl`
 
@@ -144,7 +154,7 @@ Build a comprehensive landscape with broader time range. Target **35-80 papers**
 **This phase is MANDATORY.** You must actually READ 8-15 full papers, not just their abstracts.
 
 1. Select 8-15 papers from paper_db.jsonl with rationale → write `phase3_deep_dive/selection.md`
-2. Download PDFs: `python download_papers.py --jsonl paper_db.jsonl --output-dir phase3_deep_dive/papers/ --sort-by-citations --max-downloads 15`
+2. Download PDFs: `python .claude/skills/deep-research/scripts/download_papers.py --jsonl deep-research-output/{slug}/paper_db.jsonl --output-dir deep-research-output/{slug}/phase3_deep_dive/papers/ --sort-by-citations --max-downloads 15`
 3. For EACH selected paper, read the full text (PDF via `Read` or HTML via `WebFetch` on ar5iv)
 4. Write detailed structured notes per paper (see note-format.md template): problem, contributions, methodology, experiments, limitations, connections
 5. Write ALL notes → `phase3_deep_dive/deep_dive.md`
@@ -193,7 +203,7 @@ If ANY are missing, go back and complete the missing phase(s) first.
 ## Output Directory
 
 ```
-output/{topic-slug}/
+deep-research-output/{slug}/
 ├── paper_db.jsonl                    # Master database (accumulated)
 ├── phase1_frontier/
 │   ├── paper_finder_config.yaml
@@ -228,9 +238,9 @@ output/{topic-slug}/
 
 ## References
 
-- `/Users/lingzhi/.claude/skills/deep-research/references/workflow-phases.md` — Detailed 6-phase methodology
-- `/Users/lingzhi/.claude/skills/deep-research/references/note-format.md` — Note templates, BibTeX format, report structure
-- `/Users/lingzhi/.claude/skills/deep-research/references/api-reference.md` — arXiv, Semantic Scholar, ar5iv API guide
+- `.claude/skills/deep-research/references/workflow-phases.md` — Detailed 6-phase methodology
+- `.claude/skills/deep-research/references/note-format.md` — Note templates, BibTeX format, report structure
+- `.claude/skills/deep-research/references/api-reference.md` — arXiv, Semantic Scholar, ar5iv API guide
 
 ## Related Skills
 - Downstream: [literature-search](../literature-search/), [literature-review](../literature-review/), [citation-management](../citation-management/)
