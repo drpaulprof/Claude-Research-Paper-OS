@@ -2,6 +2,17 @@
 """
 Metadata Extraction Tool
 Extract citation metadata from DOI, PMID, arXiv ID, or URL using various APIs.
+
+Exit codes (a STATUS line is also printed to stderr):
+    0  every identifier was extracted
+    1  an identifier does not exist (HTTP 404, empty result) or has an unknown type
+    2  bad command-line arguments
+    3  network failure: no connection, DNS failure, timeout, or host blocked by a proxy
+    4  rate limited: HTTP 429 (or 503 from arXiv) still returned after retries
+    5  invalid response: the reply was not the JSON/XML the API documents
+    6  other HTTP error, or an error message returned by the arXiv API
+If some identifiers fail, the successful entries are still written and the
+exit code is that of the first failure.
 """
 
 import sys
@@ -14,6 +25,53 @@ import json
 import xml.etree.ElementTree as ET
 from typing import Optional, Dict, List, Tuple
 from urllib.parse import urlparse
+
+# --- Request error handling (same exit codes as the deep-research search scripts) ---
+EXIT_OK = 0
+EXIT_NOT_FOUND = 1
+EXIT_NETWORK = 3
+EXIT_RATE_LIMITED = 4
+EXIT_INVALID_RESPONSE = 5
+EXIT_HTTP_ERROR = 6
+STATUS_NAMES = {EXIT_OK: 'ok', EXIT_NOT_FOUND: 'not_found', EXIT_NETWORK: 'network_error',
+                EXIT_RATE_LIMITED: 'rate_limited', EXIT_INVALID_RESPONSE: 'invalid_response',
+                EXIT_HTTP_ERROR: 'http_error'}
+REQUEST_TIMEOUT = 15  # seconds per request
+MAX_RETRIES = 3       # retries for 429 / temporary 5xx errors
+MAX_RETRY_WAIT = 60   # never wait longer than this between retries
+
+
+class LookupError_(Exception):
+    """A failed lookup, with the exit code that describes the failure."""
+
+    def __init__(self, code: int, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+def _describe_network_error(err: Exception) -> str:
+    """Turn a requests exception into a plain explanation."""
+    text = str(err)
+    if isinstance(err, requests.exceptions.Timeout):
+        return f'request timed out after {REQUEST_TIMEOUT}s'
+    if 'Tunnel connection failed' in text or isinstance(err, requests.exceptions.ProxyError):
+        return f'blocked by the network proxy ({text[:150]}); the host is probably not on the allowed list'
+    if 'Name or service not known' in text or 'NameResolutionError' in text or 'getaddrinfo' in text:
+        return 'DNS lookup failed; there may be no internet access, or the host is blocked'
+    return f'network error: {text[:200]}'
+
+
+def _retry_wait(response, attempt: int) -> float:
+    """Seconds to wait before retrying: Retry-After if given, else 2, 4, 8..."""
+    header = response.headers.get('Retry-After') if response is not None else None
+    if header:
+        try:
+            return min(max(float(header), 0.0), MAX_RETRY_WAIT)
+        except ValueError:
+            pass
+    return min(2 ** (attempt + 1), MAX_RETRY_WAIT)
+
 
 class MetadataExtractor:
     """Extract metadata from various sources and generate BibTeX."""
@@ -30,6 +88,36 @@ class MetadataExtractor:
             'User-Agent': 'MetadataExtractor/1.0 (Citation Management Tool)'
         })
         self.email = email or os.getenv('NCBI_EMAIL', '')
+        self.last_error = None  # LookupError_ from the most recent failed lookup
+
+    def _get(self, url: str, service: str, params: Optional[Dict] = None,
+             rate_limit_codes=(429,)):
+        """GET with timeout and retries. Returns a 200 response or raises LookupError_."""
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                response = self.session.get(url, params=params, timeout=REQUEST_TIMEOUT)
+            except requests.exceptions.RequestException as e:
+                raise LookupError_(EXIT_NETWORK, f'{service}: {_describe_network_error(e)}')
+            code = response.status_code
+            if code == 200:
+                return response
+            if (code == 429 or code in (500, 502, 503, 504)) and attempt < MAX_RETRIES:
+                wait = _retry_wait(response, attempt)
+                print(f'HTTP {code} from {service}, retrying in {wait:g}s '
+                      f'(retry {attempt + 1} of {MAX_RETRIES})...', file=sys.stderr)
+                time.sleep(wait)
+                continue
+            if code in rate_limit_codes:
+                raise LookupError_(EXIT_RATE_LIMITED, f'rate limited by {service} (HTTP {code}) after {MAX_RETRIES} retries')
+            if code == 404:
+                raise LookupError_(EXIT_NOT_FOUND, f'{service} returned HTTP 404 Not Found')
+            raise LookupError_(EXIT_HTTP_ERROR, f'{service} returned HTTP {code}')
+        raise LookupError_(EXIT_HTTP_ERROR, f'{service}: request failed')  # not reached
+
+    def _fail(self, err: 'LookupError_', label: str) -> None:
+        """Record and print a failed lookup."""
+        self.last_error = err
+        print(f'Error: {label}: {err.message} [{STATUS_NAMES[err.code]}]', file=sys.stderr)
     
     def identify_type(self, identifier: str) -> Tuple[str, str]:
         """
@@ -108,34 +196,38 @@ class MetadataExtractor:
         url = f'https://api.crossref.org/works/{doi}'
         
         try:
-            response = self.session.get(url, timeout=15)
-            
-            if response.status_code == 200:
+            response = self._get(url, 'CrossRef API')
+            try:
                 data = response.json()
-                message = data.get('message', {})
-                
-                metadata = {
-                    'type': 'doi',
-                    'entry_type': self._crossref_type_to_bibtex(message.get('type')),
-                    'doi': doi,
-                    'title': message.get('title', [''])[0],
-                    'authors': self._format_authors_crossref(message.get('author', [])),
-                    'year': self._extract_year_crossref(message),
-                    'journal': message.get('container-title', [''])[0] if message.get('container-title') else '',
-                    'volume': str(message.get('volume', '')) if message.get('volume') else '',
-                    'issue': str(message.get('issue', '')) if message.get('issue') else '',
-                    'pages': message.get('page', ''),
-                    'publisher': message.get('publisher', ''),
-                    'url': f'https://doi.org/{doi}'
-                }
-                
-                return metadata
-            else:
-                print(f'Error: CrossRef API returned status {response.status_code} for DOI: {doi}', file=sys.stderr)
-                return None
-                
-        except Exception as e:
-            print(f'Error extracting metadata from DOI {doi}: {e}', file=sys.stderr)
+            except ValueError as e:
+                raise LookupError_(EXIT_INVALID_RESPONSE, f'CrossRef reply is not valid JSON ({e})')
+            message = data.get('message') if isinstance(data, dict) else None
+            if not isinstance(message, dict):
+                raise LookupError_(EXIT_INVALID_RESPONSE, 'CrossRef reply has no "message" object')
+            
+            metadata = {
+                'type': 'doi',
+                'entry_type': self._crossref_type_to_bibtex(message.get('type')),
+                'doi': doi,
+                'title': message.get('title', [''])[0],
+                'authors': self._format_authors_crossref(message.get('author', [])),
+                'year': self._extract_year_crossref(message),
+                'journal': message.get('container-title', [''])[0] if message.get('container-title') else '',
+                'volume': str(message.get('volume', '')) if message.get('volume') else '',
+                'issue': str(message.get('issue', '')) if message.get('issue') else '',
+                'pages': message.get('page', ''),
+                'publisher': message.get('publisher', ''),
+                'url': f'https://doi.org/{doi}'
+            }
+            
+            return metadata
+            
+        except LookupError_ as e:
+            self._fail(e, f'DOI {doi}')
+            return None
+        except (KeyError, IndexError, TypeError, AttributeError) as e:
+            # Reply parsed, but a documented field was missing or had the wrong type
+            self._fail(LookupError_(EXIT_INVALID_RESPONSE, f'reply is missing expected fields ({e!r})'), f'DOI {doi}')
             return None
     
     def extract_from_pmid(self, pmid: str) -> Optional[Dict]:
@@ -164,50 +256,51 @@ class MetadataExtractor:
             params['api_key'] = api_key
         
         try:
-            response = self.session.get(url, params=params, timeout=15)
-            
-            if response.status_code == 200:
+            response = self._get(url, 'PubMed API', params=params)
+            try:
                 root = ET.fromstring(response.content)
-                article = root.find('.//PubmedArticle')
-                
-                if article is None:
-                    print(f'Error: No article found for PMID: {pmid}', file=sys.stderr)
-                    return None
-                
-                # Extract metadata from XML
-                medline_citation = article.find('.//MedlineCitation')
-                article_elem = medline_citation.find('.//Article')
-                journal = article_elem.find('.//Journal')
-                
-                # Get DOI if available
-                doi = None
-                article_ids = article.findall('.//ArticleId')
-                for article_id in article_ids:
-                    if article_id.get('IdType') == 'doi':
-                        doi = article_id.text
-                        break
-                
-                metadata = {
-                    'type': 'pmid',
-                    'entry_type': 'article',
-                    'pmid': pmid,
-                    'title': article_elem.findtext('.//ArticleTitle', ''),
-                    'authors': self._format_authors_pubmed(article_elem.findall('.//Author')),
-                    'year': self._extract_year_pubmed(article_elem),
-                    'journal': journal.findtext('.//Title', ''),
-                    'volume': journal.findtext('.//JournalIssue/Volume', ''),
-                    'issue': journal.findtext('.//JournalIssue/Issue', ''),
-                    'pages': article_elem.findtext('.//Pagination/MedlinePgn', ''),
-                    'doi': doi
-                }
-                
-                return metadata
-            else:
-                print(f'Error: PubMed API returned status {response.status_code} for PMID: {pmid}', file=sys.stderr)
-                return None
-                
-        except Exception as e:
-            print(f'Error extracting metadata from PMID {pmid}: {e}', file=sys.stderr)
+            except ET.ParseError as e:
+                raise LookupError_(EXIT_INVALID_RESPONSE, f'PubMed reply is not valid XML ({e})')
+            article = root.find('.//PubmedArticle')
+            
+            if article is None:
+                raise LookupError_(EXIT_NOT_FOUND, f'No article found for PMID: {pmid}')
+            
+            # Extract metadata from XML
+            medline_citation = article.find('.//MedlineCitation')
+            article_elem = medline_citation.find('.//Article')
+            journal = article_elem.find('.//Journal')
+            
+            # Get DOI if available
+            doi = None
+            article_ids = article.findall('.//ArticleId')
+            for article_id in article_ids:
+                if article_id.get('IdType') == 'doi':
+                    doi = article_id.text
+                    break
+            
+            metadata = {
+                'type': 'pmid',
+                'entry_type': 'article',
+                'pmid': pmid,
+                'title': article_elem.findtext('.//ArticleTitle', ''),
+                'authors': self._format_authors_pubmed(article_elem.findall('.//Author')),
+                'year': self._extract_year_pubmed(article_elem),
+                'journal': journal.findtext('.//Title', ''),
+                'volume': journal.findtext('.//JournalIssue/Volume', ''),
+                'issue': journal.findtext('.//JournalIssue/Issue', ''),
+                'pages': article_elem.findtext('.//Pagination/MedlinePgn', ''),
+                'doi': doi
+            }
+            
+            return metadata
+            
+        except LookupError_ as e:
+            self._fail(e, f'PMID {pmid}')
+            return None
+        except (AttributeError, KeyError, IndexError, TypeError) as e:
+            # A <PubmedArticle> without the usual MedlineCitation/Article/Journal parts
+            self._fail(LookupError_(EXIT_INVALID_RESPONSE, f'PubMed reply is missing expected fields ({e})'), f'PMID {pmid}')
             return None
     
     def extract_from_arxiv(self, arxiv_id: str) -> Optional[Dict]:
@@ -227,57 +320,66 @@ class MetadataExtractor:
         }
         
         try:
-            response = self.session.get(url, params=params, timeout=15)
-            
-            if response.status_code == 200:
-                # Parse Atom XML
+            response = self._get(url, 'arXiv API', params=params, rate_limit_codes=(429, 503))
+            # Parse Atom XML
+            try:
                 root = ET.fromstring(response.content)
-                ns = {'atom': 'http://www.w3.org/2005/Atom', 'arxiv': 'http://arxiv.org/schemas/atom'}
-                
-                entry = root.find('atom:entry', ns)
-                if entry is None:
-                    print(f'Error: No entry found for arXiv ID: {arxiv_id}', file=sys.stderr)
-                    return None
-                
-                # Extract DOI if published
-                doi_elem = entry.find('arxiv:doi', ns)
-                doi = doi_elem.text if doi_elem is not None else None
-                
-                # Extract journal reference if published
-                journal_ref_elem = entry.find('arxiv:journal_ref', ns)
-                journal_ref = journal_ref_elem.text if journal_ref_elem is not None else None
-                
-                # Get publication date
-                published = entry.findtext('atom:published', '', ns)
-                year = published[:4] if published else ''
-                
-                # Get authors
-                authors = []
-                for author in entry.findall('atom:author', ns):
-                    name = author.findtext('atom:name', '', ns)
-                    if name:
-                        authors.append(name)
-                
-                metadata = {
-                    'type': 'arxiv',
-                    'entry_type': 'misc' if not doi else 'article',
-                    'arxiv_id': arxiv_id,
-                    'title': entry.findtext('atom:title', '', ns).strip().replace('\n', ' '),
-                    'authors': ' and '.join(authors),
-                    'year': year,
-                    'doi': doi,
-                    'journal_ref': journal_ref,
-                    'abstract': entry.findtext('atom:summary', '', ns).strip().replace('\n', ' '),
-                    'url': f'https://arxiv.org/abs/{arxiv_id}'
-                }
-                
-                return metadata
-            else:
-                print(f'Error: arXiv API returned status {response.status_code} for ID: {arxiv_id}', file=sys.stderr)
-                return None
-                
-        except Exception as e:
-            print(f'Error extracting metadata from arXiv {arxiv_id}: {e}', file=sys.stderr)
+            except ET.ParseError as e:
+                raise LookupError_(EXIT_INVALID_RESPONSE, f'arXiv reply is not valid XML ({e})')
+            ns = {'atom': 'http://www.w3.org/2005/Atom', 'arxiv': 'http://arxiv.org/schemas/atom'}
+            if root.tag != '{http://www.w3.org/2005/Atom}feed':
+                raise LookupError_(EXIT_INVALID_RESPONSE, f'arXiv reply is not an Atom feed (root {root.tag!r})')
+            
+            entry = root.find('atom:entry', ns)
+            if entry is None:
+                raise LookupError_(EXIT_NOT_FOUND, f'No entry found for arXiv ID: {arxiv_id}')
+            # arXiv reports bad IDs as HTTP 200 with an "Error" entry; without
+            # this check that entry was turned into a BibTeX record titled "Error".
+            entry_id = entry.findtext('atom:id', '', ns)
+            if '/api/errors' in entry_id:
+                detail = ' '.join(entry.findtext('atom:summary', '', ns).split())
+                raise LookupError_(EXIT_HTTP_ERROR, f'arXiv API reported an error: {detail or entry_id}')
+            
+            # Extract DOI if published
+            doi_elem = entry.find('arxiv:doi', ns)
+            doi = doi_elem.text if doi_elem is not None else None
+            
+            # Extract journal reference if published
+            journal_ref_elem = entry.find('arxiv:journal_ref', ns)
+            journal_ref = journal_ref_elem.text if journal_ref_elem is not None else None
+            
+            # Get publication date
+            published = entry.findtext('atom:published', '', ns)
+            year = published[:4] if published else ''
+            
+            # Get authors
+            authors = []
+            for author in entry.findall('atom:author', ns):
+                name = author.findtext('atom:name', '', ns)
+                if name:
+                    authors.append(name)
+            
+            metadata = {
+                'type': 'arxiv',
+                'entry_type': 'misc' if not doi else 'article',
+                'arxiv_id': arxiv_id,
+                'title': entry.findtext('atom:title', '', ns).strip().replace('\n', ' '),
+                'authors': ' and '.join(authors),
+                'year': year,
+                'doi': doi,
+                'journal_ref': journal_ref,
+                'abstract': entry.findtext('atom:summary', '', ns).strip().replace('\n', ' '),
+                'url': f'https://arxiv.org/abs/{arxiv_id}'
+            }
+            
+            return metadata
+            
+        except LookupError_ as e:
+            self._fail(e, f'arXiv {arxiv_id}')
+            return None
+        except (KeyError, IndexError, TypeError, AttributeError) as e:
+            # Reply parsed, but a documented field was missing or had the wrong type
+            self._fail(LookupError_(EXIT_INVALID_RESPONSE, f'reply is missing expected fields ({e!r})'), f'arXiv {arxiv_id}')
             return None
     
     def metadata_to_bibtex(self, metadata: Dict, citation_key: Optional[str] = None) -> str:
@@ -462,6 +564,7 @@ class MetadataExtractor:
         Returns:
             BibTeX string or None
         """
+        self.last_error = None
         id_type, clean_id = self.identify_type(identifier)
         
         print(f'Identified as {id_type}: {clean_id}', file=sys.stderr)
@@ -475,7 +578,8 @@ class MetadataExtractor:
         elif id_type == 'arxiv':
             metadata = self.extract_from_arxiv(clean_id)
         else:
-            print(f'Error: Unknown identifier type: {identifier}', file=sys.stderr)
+            self._fail(LookupError_(EXIT_NOT_FOUND, 'unknown identifier type (expected DOI, PMID, arXiv ID or URL)'),
+                       identifier)
             return None
         
         if metadata:
@@ -529,12 +633,16 @@ def main():
     # Extract metadata
     extractor = MetadataExtractor(email=args.email)
     bibtex_entries = []
+    failures = []  # (identifier, LookupError_)
     
     for i, identifier in enumerate(identifiers):
         print(f'\nProcessing {i+1}/{len(identifiers)}...', file=sys.stderr)
         bibtex = extractor.extract(identifier)
         if bibtex:
             bibtex_entries.append(bibtex)
+        else:
+            failures.append((identifier, extractor.last_error
+                             or LookupError_(EXIT_HTTP_ERROR, 'extraction failed')))
         
         # Rate limiting
         if i < len(identifiers) - 1:
@@ -542,7 +650,9 @@ def main():
     
     if not bibtex_entries:
         print('Error: No successful extractions', file=sys.stderr)
-        sys.exit(1)
+        first = failures[0][1]
+        print(f'STATUS: {STATUS_NAMES[first.code]} extracted=0 failed={len(failures)}', file=sys.stderr)
+        sys.exit(first.code)
     
     # Format output
     if args.format == 'bibtex':
@@ -562,6 +672,17 @@ def main():
         print(output)
     
     print(f'\nExtracted {len(bibtex_entries)}/{len(identifiers)} entries', file=sys.stderr)
+
+    if failures:
+        print(f'WARNING: {len(failures)} identifier(s) failed:', file=sys.stderr)
+        for identifier, err in failures:
+            print(f'  - {identifier}: {STATUS_NAMES[err.code]}: {err.message}', file=sys.stderr)
+        first = failures[0][1]
+        print(f'STATUS: {STATUS_NAMES[first.code]} extracted={len(bibtex_entries)} failed={len(failures)}',
+              file=sys.stderr)
+        sys.exit(first.code)
+    print(f'STATUS: ok extracted={len(bibtex_entries)}', file=sys.stderr)
+    sys.exit(EXIT_OK)
 
 
 if __name__ == '__main__':

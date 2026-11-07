@@ -10,12 +10,24 @@ Usage:
     python harvest_citations.py --tex main.tex --bib references.bib --output candidates.bib
     python harvest_citations.py --tex main.tex --bib references.bib --max-rounds 10 --dry-run
     python harvest_citations.py --tex main.tex --bib references.bib --output candidates.bib --verbose
+
+Exit codes (a STATUS line is also printed to stderr):
+    0  every search worked (this includes "0 candidates found")
+    2  bad command-line arguments
+    3  network failure: no connection, DNS failure, timeout, or host blocked by a proxy
+    4  rate limited: HTTP 429 still returned after retries
+    5  invalid response: a reply was not the JSON the API documents
+    6  other HTTP error
+On a network failure or an exhausted rate limit the remaining searches are
+skipped, because they would fail the same way. Candidates found before the
+failure are still written, and the exit code is nonzero.
 """
 
 import argparse
 import json
 import os
 import re
+import socket
 import sys
 import time
 import urllib.error
@@ -23,6 +35,51 @@ import urllib.parse
 import urllib.request
 
 S2_API = "https://api.semanticscholar.org/graph/v1/paper/search"
+
+# --- Request error handling (same exit codes as the deep-research search scripts) ---
+EXIT_OK = 0
+EXIT_NETWORK = 3
+EXIT_RATE_LIMITED = 4
+EXIT_INVALID_RESPONSE = 5
+EXIT_HTTP_ERROR = 6
+STATUS_NAMES = {EXIT_OK: "ok", EXIT_NETWORK: "network_error", EXIT_RATE_LIMITED: "rate_limited",
+                EXIT_INVALID_RESPONSE: "invalid_response", EXIT_HTTP_ERROR: "http_error"}
+REQUEST_TIMEOUT = 15  # seconds per request
+MAX_RETRIES = 3       # retries for 429 / temporary 5xx errors
+MAX_RETRY_WAIT = 60   # never wait longer than this between retries
+
+
+class RequestError(Exception):
+    """A failed request, with the exit code that describes the failure."""
+
+    def __init__(self, code: int, message: str):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+
+
+def describe_network_error(err: Exception, timeout: float) -> str:
+    """Turn a low-level network exception into a plain explanation."""
+    reason = getattr(err, "reason", err)
+    text = str(reason)
+    if isinstance(reason, (socket.timeout, TimeoutError)) or "timed out" in text:
+        return f"request timed out after {timeout}s"
+    if "Tunnel connection failed" in text:
+        return f"blocked by the network proxy ({text}); the host is probably not on the allowed list"
+    if "Name or service not known" in text or "nodename nor servname" in text or "getaddrinfo" in text:
+        return f"DNS lookup failed ({text}); there may be no internet access, or the host is blocked"
+    return f"network error: {text}"
+
+
+def retry_wait(err: urllib.error.HTTPError, attempt: int) -> float:
+    """Seconds to wait before retrying: Retry-After if given, else 2, 4, 8..."""
+    header = err.headers.get("Retry-After") if err.headers else None
+    if header:
+        try:
+            return min(max(float(header), 0.0), MAX_RETRY_WAIT)
+        except ValueError:
+            pass
+    return min(2 ** (attempt + 1), MAX_RETRY_WAIT)
 
 CLAIM_PATTERNS = [
     r"(?:has been shown|have been shown|was shown|were shown|is known|are known)",
@@ -93,7 +150,11 @@ def find_uncited_claims(tex_content: str) -> list[dict]:
 
 
 def search_semantic_scholar(query: str, limit: int = 3, api_key: str = "") -> list[dict]:
-    """Search Semantic Scholar for papers matching the query."""
+    """Search Semantic Scholar for papers matching the query.
+
+    Returns an empty list only when the search worked and nothing matched.
+    Raises RequestError on network, HTTP, rate-limit or invalid-response failures.
+    """
     params = urllib.parse.urlencode({
         "query": query,
         "limit": limit,
@@ -104,14 +165,41 @@ def search_semantic_scholar(query: str, limit: int = 3, api_key: str = "") -> li
     if api_key:
         headers["x-api-key"] = api_key
 
+    req = urllib.request.Request(url, headers=headers)
+    for attempt in range(MAX_RETRIES + 1):
+        try:
+            with urllib.request.urlopen(req, timeout=REQUEST_TIMEOUT) as resp:
+                body = resp.read()
+            break
+        except urllib.error.HTTPError as e:
+            if (e.code == 429 or e.code in (500, 502, 503, 504)) and attempt < MAX_RETRIES:
+                wait = retry_wait(e, attempt)
+                print(f"  HTTP {e.code} from Semantic Scholar, retrying in {wait:g}s "
+                      f"(retry {attempt + 1} of {MAX_RETRIES})...", file=sys.stderr)
+                time.sleep(wait)
+                continue
+            if e.code == 429:
+                hint = "" if api_key else " An optional free API key raises the limit."
+                raise RequestError(EXIT_RATE_LIMITED,
+                                   f"rate limited by Semantic Scholar (HTTP 429) after {MAX_RETRIES} retries.{hint}")
+            raise RequestError(EXIT_HTTP_ERROR, f"Semantic Scholar returned HTTP {e.code} {e.reason}")
+        except (urllib.error.URLError, socket.timeout, TimeoutError, ConnectionError) as e:
+            raise RequestError(EXIT_NETWORK, describe_network_error(e, REQUEST_TIMEOUT))
+
     try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        return data.get("data", [])
-    except Exception as e:
-        print(f"  S2 API error: {e}", file=sys.stderr)
-        return []
+        data = json.loads(body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError) as e:
+        raise RequestError(EXIT_INVALID_RESPONSE, f"Semantic Scholar reply is not valid JSON ({e})")
+    if not isinstance(data, dict):
+        raise RequestError(EXIT_INVALID_RESPONSE, "Semantic Scholar reply is not a JSON object")
+    if "data" not in data:
+        if data.get("total") == 0:
+            return []  # valid empty result
+        raise RequestError(EXIT_INVALID_RESPONSE,
+                           f"Semantic Scholar reply has no \"data\" field (keys: {', '.join(sorted(data)) or 'none'})")
+    if not isinstance(data["data"], list):
+        raise RequestError(EXIT_INVALID_RESPONSE, "Semantic Scholar reply: \"data\" is not a list")
+    return data["data"]
 
 
 def make_bibtex_key(paper: dict) -> str:
@@ -200,10 +288,23 @@ def main():
     candidates = []
     used_keys = set(existing_keys)
     rounds = min(len(claims), args.max_rounds)
+    failures = []          # (query, RequestError)
+    searches_done = 0
+    stopped_early = False
 
     for i, claim in enumerate(claims[:rounds]):
         print(f"\n[{i+1}/{rounds}] Searching for: {claim['query'][:60]}...", file=sys.stderr)
-        papers = search_semantic_scholar(claim["query"], limit=3, api_key=args.api_key)
+        try:
+            papers = search_semantic_scholar(claim["query"], limit=3, api_key=args.api_key)
+        except RequestError as e:
+            failures.append((claim["query"], e))
+            print(f"  SEARCH FAILED ({STATUS_NAMES[e.code]}): {e.message}", file=sys.stderr)
+            if e.code in (EXIT_NETWORK, EXIT_RATE_LIMITED):
+                stopped_early = True
+                print("  Stopping: the remaining searches would fail the same way.", file=sys.stderr)
+                break
+            continue
+        searches_done += 1
         time.sleep(1)  # Rate limiting
 
         if not papers:
@@ -238,6 +339,20 @@ def main():
             print(f"Written to: {args.output}", file=sys.stderr)
         else:
             print(output_text)
+
+    if failures:
+        skipped = rounds - searches_done - len(failures)
+        first = failures[0][1]
+        print(f"ERROR: {len(failures)} of {rounds} searches failed"
+              + (f" and {skipped} were skipped" if stopped_early and skipped > 0 else "")
+              + f". First failure: {first.message}", file=sys.stderr)
+        print("The candidate list is incomplete. Do not read it as 'no citations exist'.", file=sys.stderr)
+        print(f"STATUS: {STATUS_NAMES[first.code]} searches_ok={searches_done} failed={len(failures)} "
+              f"candidates={len(candidates)}", file=sys.stderr)
+        sys.exit(first.code)
+
+    print(f"STATUS: ok searches_ok={searches_done} candidates={len(candidates)}", file=sys.stderr)
+    sys.exit(EXIT_OK)
 
 
 if __name__ == "__main__":
