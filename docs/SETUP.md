@@ -14,7 +14,7 @@ This guide walks through installation, configuration, and first use of Claude Re
 
 - **Docker** -- For LaTeX compilation inside a container. Install from [docker.com](https://www.docker.com/). If you do not have Docker, you can use a local LaTeX installation instead.
 
-- **Python 3.8+** -- Some skills include Python scripts for citation validation, literature search, and formatting checks. Install from [python.org](https://www.python.org/).
+- **Python 3.10+** -- Some skills include Python scripts for citation validation, literature search, and formatting checks. The scripts use Python 3.10 syntax (for example `str | None` type hints and `match` statements), so Python 3.9 or older will not run them. One script, `academic-paper-strategist/scripts/gap_analysis.py`, needs Python 3.12+. Install from [python.org](https://www.python.org/). Check your version with `python3 --version`.
 
 - **LaTeX distribution** -- If not using Docker. TeX Live (Linux/Mac) or MiKTeX (Windows).
 
@@ -81,19 +81,20 @@ compile_command: >
 
 ### Step 5: Python dependencies (optional)
 
-The scripts the 6 agents use need only Python 3.8+ and its standard library. Nothing extra has to be installed for them.
+The scripts the 6 agents use need only Python 3.10+ and its standard library. Nothing extra has to be installed for them.
 
 - `citation-management/scripts/validate_citations.py`
 - `deep-research/scripts/search_semantic_scholar.py`
+- `deep-research/scripts/search_arxiv.py`
 - `literature-search/scripts/search_crossref.py`
 - `literature-search/scripts/download_arxiv_source.py`
 - `latex-formatting/scripts/latex_checker.py` and `clean_latex.py`
 - `paper-assembly/scripts/assembly_checker.py`
 - `paper-compilation/scripts/compile_paper.py`
 
-Some other skills need extra packages, only if you use them. For example `figure-generation` needs `matplotlib`, `data-analysis` needs `numpy`, `scipy` and `pandas`, and some PDF scripts need `pypdf` or `PyMuPDF`. Check the `import` lines of a script before running it.
+Some other skills need extra packages, only if you use them. For example `figure-generation` needs `matplotlib`, `data-analysis` needs `numpy`, `scipy` and `pandas`, some PDF scripts need `pypdf` or `PyMuPDF`, and `sw-citation-management/scripts/extract_metadata.py` needs `requests`. Check the `import` lines of a script before running it.
 
-The search scripts need internet access to api.semanticscholar.org, api.crossref.org and arxiv.org.
+The search scripts need internet access to api.semanticscholar.org, api.crossref.org and export.arxiv.org. Downloading arXiv source files (`download_arxiv_source.py`) also needs arxiv.org.
 
 ### Step 5b: Optional API keys
 
