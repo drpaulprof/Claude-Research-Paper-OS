@@ -116,6 +116,19 @@ python .claude/skills/deep-research/scripts/search_semantic_scholar.py --query "
 **Location**: `.claude/skills/deep-research/scripts/search_arxiv.py`
 For searching recent papers not yet published at conferences. Mark citations with `(preprint)`.
 
+### Exit codes of search_semantic_scholar.py and search_arxiv.py
+Always check the exit code and the last `STATUS:` line on stderr before using the results.
+
+| Exit | STATUS | Meaning | What to do |
+|------|--------|---------|------------|
+| 0 | `ok papers=N` | Search worked. `N` can be 0, which means no paper matched | Use the results. If 0, try other keywords |
+| 3 | `network_error` | No connection, DNS failure, timeout, or host blocked by a proxy | Report the service as unavailable. Do not treat it as "no papers found" |
+| 4 | `rate_limited` | HTTP 429 (or 503 for arXiv) after all retries | Wait and retry later, or use the optional free API key |
+| 5 | `invalid_response` | The reply was not the expected JSON or Atom feed | Report it, do not use the output |
+| 6 | `http_error` | Other HTTP error (bad query, unknown ID, server error) or an arXiv API error message | Fix the query or report the error |
+
+On failure no output file is written. If a later page fails, the earlier papers are written and the STATUS line says `partial`. Both scripts accept `--timeout SECONDS` (default 30) and `--max-retries N` (default 3).
+
 ### Other Scripts
 | Script | Location | Key Flags |
 |--------|----------|-----------|

@@ -4,7 +4,7 @@
 
 ### Base URL
 ```
-http://export.arxiv.org/api/query
+https://export.arxiv.org/api/query
 ```
 
 ### Query Parameters
@@ -57,7 +57,7 @@ python .claude/skills/deep-research/scripts/search_arxiv.py \
 
 ### WebFetch Usage
 ```
-WebFetch http://export.arxiv.org/api/query?search_query=all:transformer+AND+cat:cs.AI&max_results=10&sortBy=relevance
+WebFetch https://export.arxiv.org/api/query?search_query=all:transformer+AND+cat:cs.AI&max_results=10&sortBy=relevance
 ```
 Parse the Atom XML response to extract paper entries.
 
